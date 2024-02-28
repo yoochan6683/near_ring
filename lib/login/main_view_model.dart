@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:kakao_flutter_sdk/kakao_flutter_sdk_talk.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 import 'package:near_ring/login/firebase_auth_remote_data_source.dart';
 import 'package:near_ring/login/social_login.dart';
@@ -10,6 +11,28 @@ class MainViewModel {
   kakao.User? user; //카카오톡에서 사용자 정보를 저장하는 객체 User를 nullable 변수로 선언
 
   MainViewModel(this._socialLogin);
+
+  Future bringUser() async {
+    if (await AuthApi.instance.hasToken()) {
+      try {
+        AccessTokenInfo tokenInfo = await UserApi.instance.accessTokenInfo();
+        print('토큰 유효성 체크 성공 ${tokenInfo.id} ${tokenInfo.expiresIn}');
+        user = await kakao.UserApi.instance.me();
+      } catch (error) {
+        //토큰이 유효하지 않은 경우
+        if (error is KakaoException && error.isInvalidTokenError()) {
+          print('토큰 만료 $error');
+        } else {
+          print('토큰 정보 조회 실패 $error');
+        }
+
+        _socialLogin.login();
+      }
+    } else {
+      //발급된 토큰이 없는 경우
+      _socialLogin.login();
+    }
+  }
 
   Future login() async {
     isLogined = await _socialLogin.login(); //로그인되어 있는지 확인

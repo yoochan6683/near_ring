@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -7,6 +7,7 @@ import 'package:near_ring/firebase_options.dart';
 import 'package:near_ring/login/kakao_login.dart';
 import 'package:near_ring/login/main_view_model.dart';
 import 'package:near_ring/screens/auth.dart';
+import 'package:near_ring/screens/loading.dart';
 import 'package:near_ring/screens/near_ring_home.dart';
 
 void main() async {
@@ -29,17 +30,6 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final viewModel = MainViewModel(KakaoLogin());
 
-  //로그아웃 안 한 상태에서 앱 빌드 다시하면 오류 날때 로그아웃 하는 용도로 쓸 것
-  // void kakaoLogout() async {
-  //   await viewModel.logout();
-  // }
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   kakaoLogout();
-  // }
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -56,12 +46,19 @@ class _MyAppState extends State<MyApp> {
         useMaterial3: true,
       ),
       home: StreamBuilder(
-          stream: FirebaseAuth.instance.authStateChanges(),
+          stream: firebase.FirebaseAuth.instance.authStateChanges(),
           builder: (ctx, snapshot) {
             if (!snapshot.hasData) {
               return AuthScreen(viewModel: viewModel);
             } else {
-              return NearRingHomeScreen(viewModel: viewModel);
+              return FutureBuilder(
+                  future: viewModel.bringUser(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const LoadingScreen();
+                    }
+                    return NearRingHomeScreen(viewModel: viewModel);
+                  });
             }
           }),
     );
