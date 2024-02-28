@@ -15,8 +15,10 @@ class MainViewModel {
   Future bringUser() async {
     if (await AuthApi.instance.hasToken()) {
       try {
-        AccessTokenInfo tokenInfo = await UserApi.instance.accessTokenInfo();
-        print('토큰 유효성 체크 성공 ${tokenInfo.id} ${tokenInfo.expiresIn}');
+        //토큰이 존재하고 유효하면 다음줄이 실행, 없거나 에러가 나면 catch
+        await UserApi.instance.accessTokenInfo();
+
+        //토큰이 존재하고 유효할 경우 user 정보 불러옴
         user = await kakao.UserApi.instance.me();
       } catch (error) {
         //토큰이 유효하지 않은 경우
@@ -26,11 +28,11 @@ class MainViewModel {
           print('토큰 정보 조회 실패 $error');
         }
 
-        _socialLogin.login();
+        await _socialLogin.login();
       }
     } else {
       //발급된 토큰이 없는 경우
-      _socialLogin.login();
+      await _socialLogin.login();
     }
   }
 
